@@ -56,10 +56,10 @@ class AdpApiClient implements iAdpGuzzleApiClient
             $this->username .
             '&password=' .
             $this->password .
-            '&dstaddr=' .
+            '&dstaddress=' .
             $message->getDstAddress() .
             '&body=' .
-            $message->getBody();
+            urlencode($message->getBody());
 
         if (!empty($message->getSrcAddress())) {
            $url = $url .
@@ -69,7 +69,7 @@ class AdpApiClient implements iAdpGuzzleApiClient
 
         if (!empty($message->getClientId())) {
             $url = $url .
-                '&body=' .
+                '&clientid=' .
                 $message->getClientId();
         }
 

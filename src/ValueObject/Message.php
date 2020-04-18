@@ -123,7 +123,7 @@ class Message
      */
     public function getUnicode(): ?int
     {
-        return $this->unicode;
+        return $this->unicode ?? null;
     }
 
     /**
@@ -141,7 +141,7 @@ class Message
      */
     public function getSrcPort(): ?int
     {
-        return $this->src_port;
+        return $this->src_port ?? null;
     }
 
     /**
@@ -159,7 +159,7 @@ class Message
      */
     public function getDstPort(): ?int
     {
-        return $this->dst_port;
+        return $this->dst_port ?? null;
     }
 
     /**
@@ -177,7 +177,7 @@ class Message
      */
     public function getType(): ?string
     {
-        return $this->type;
+        return $this->type ?? null;
     }
 
     /**
