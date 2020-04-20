@@ -10,32 +10,32 @@ class ReportVO
     /**
      * @var string|null
      */
-    protected ?string $from_client_id;
+    protected ?string $from_client_id = null;
 
     /**
      * @var string|null
      */
-    protected ?string $from_id;
+    protected ?string $from_id = null;
 
     /**
      * @var string|null
      */
-    protected ?string $client_id;
+    protected ?string $client_id = null;
 
     /**
      * @var string|null
      */
-    protected ?string $id;
+    protected ?string $id = null;
 
     /**
      * @var string|null
      */
-    protected ?string $full;
+    protected ?string $full = null;
 
     /**
      * @var string|null
      */
-    protected ?string $src_address;
+    protected ?string $src_address = null;
 
     /**
      * @return string|null

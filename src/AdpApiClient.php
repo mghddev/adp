@@ -8,6 +8,7 @@ use mghddev\adp\Exception\AdpEnoughCreditException;
 use mghddev\adp\Exception\AdpException;
 use mghddev\adp\Exception\AdpInvalidArgumentException;
 use mghddev\adp\Exception\AdpInvalidMessageBodyException;
+use mghddev\adp\Exception\AdpMessageNotFoundException;
 use mghddev\adp\Exception\AdpValidationException;
 use mghddev\adp\ValueObject\Message;
 use mghddev\adp\ValueObject\ReportVO;
@@ -131,7 +132,13 @@ class AdpApiClient implements iAdpGuzzleApiClient
 
     /**
      * @param ReportVO $reportVO
-     * @return false|string
+     * @return string|string[]
+     * @throws AdpAuthenticationException
+     * @throws AdpEnoughCreditException
+     * @throws AdpException
+     * @throws AdpInvalidMessageBodyException
+     * @throws AdpMessageNotFoundException
+     * @throws AdpValidationException
      */
     public function report(ReportVO $reportVO)
     {
@@ -163,9 +170,24 @@ class AdpApiClient implements iAdpGuzzleApiClient
             $url = $url . '&srcaddress=' . $reportVO->getSrcAddress();
         }
 
-        $result_rec = file_get_contents($this->base_uri . $url);
+        $result_rep = file_get_contents($this->base_uri . $url);
 
-        return $result_rec;
+        if (strpos($result_rep, '--BEGIN') === 0) {
+            $id = ltrim($result_rep, '--BEGIN');
+            if (strpos($id, 'INFO') === 1) {
+                throw new AdpMessageNotFoundException($result_rep);
+            } else {
+                $status_pos = strpos($result_rep, 'STATUS:');
+                $status = substr($result_rep, $status_pos + 7);
+
+                $status = str_replace('--END', '', $status);
+                $status = str_replace(' ', '', $status);
+
+                return $status;
+            }
+        }
+
+        $this->generateExceptionFromResultString($result_rep);
     }
 
     /**
