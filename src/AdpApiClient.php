@@ -3,6 +3,7 @@ namespace mghddev\adp;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\RequestOptions;
+use mghddev\adp\Constant\MessageStatus;
 use mghddev\adp\Exception\AdpAuthenticationException;
 use mghddev\adp\Exception\AdpEnoughCreditException;
 use mghddev\adp\Exception\AdpException;
@@ -177,13 +178,7 @@ class AdpApiClient implements iAdpGuzzleApiClient
             if (strpos($id, 'INFO') === 1) {
                 throw new AdpMessageNotFoundException($result_rep);
             } else {
-                $status_pos = strpos($result_rep, 'STATUS:');
-                $status = substr($result_rep, $status_pos + 7);
-
-                $status = str_replace('--END', '', $status);
-                $status = str_replace(' ', '', $status);
-
-                return $status;
+                return $this->generateStatus($result_rep);
             }
         }
 
@@ -232,6 +227,25 @@ class AdpApiClient implements iAdpGuzzleApiClient
 
         throw new AdpException($result);
 
+    }
+
+    /**
+     * @param string $result_rep
+     * @return string
+     */
+    private function generateStatus(string $result_rep)
+    {
+        if (strpos($result_rep, MessageStatus::DELIVERED) !== false) {
+            return MessageStatus::DELIVERED;
+        }
+
+        if (strpos($result_rep, MessageStatus::PENDING) !== false) {
+            return MessageStatus::PENDING;
+        }
+
+        if (strpos($result_rep, MessageStatus::UNDELIVERABLE) !== false) {
+            return MessageStatus::UNDELIVERABLE;
+        }
     }
 
 }
