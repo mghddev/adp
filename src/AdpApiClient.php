@@ -3,6 +3,12 @@ namespace mghddev\adp;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\RequestOptions;
+use mghddev\adp\Exception\AdpAuthenticationException;
+use mghddev\adp\Exception\AdpEnoughCreditException;
+use mghddev\adp\Exception\AdpException;
+use mghddev\adp\Exception\AdpInvalidArgumentException;
+use mghddev\adp\Exception\AdpInvalidMessageBodyException;
+use mghddev\adp\Exception\AdpValidationException;
 use mghddev\adp\ValueObject\Message;
 use mghddev\adp\ValueObject\ReportVO;
 
@@ -16,7 +22,7 @@ class AdpApiClient implements iAdpGuzzleApiClient
     /**
      * @var array
      */
-    protected array $default_config = ['base_uri' => 'http://ws.adpdigital.com/url'];
+    protected array $default_config = ['base_uri' => 'http://ws2.adpdigital.com/url'];
 
     /**
      * @var Client
@@ -38,6 +44,12 @@ class AdpApiClient implements iAdpGuzzleApiClient
      */
     protected string $base_uri;
 
+    /**
+     * AdpApiClient constructor.
+     * @param string $username
+     * @param string $password
+     * @param array $config
+     */
     public function __construct(string $username, string $password, array $config = [])
     {
         $this->base_uri = $config['base_uri'] ?? $this->default_config['base_uri'];
@@ -48,7 +60,12 @@ class AdpApiClient implements iAdpGuzzleApiClient
 
     /**
      * @param Message $message
-     * @return false|string
+     * @return string|string[]
+     * @throws AdpAuthenticationException
+     * @throws AdpEnoughCreditException
+     * @throws AdpException
+     * @throws AdpInvalidMessageBodyException
+     * @throws AdpValidationException
      */
     public function send(Message $message)
     {
@@ -60,6 +77,7 @@ class AdpApiClient implements iAdpGuzzleApiClient
             $message->getDstAddress() .
             '&body=' .
             urlencode($message->getBody());
+
 
         if (!empty($message->getSrcAddress())) {
            $url = $url .
@@ -99,7 +117,16 @@ class AdpApiClient implements iAdpGuzzleApiClient
 
         $result = file_get_contents($this->base_uri . $url);
 
-        return $result;
+        if (strpos($result, '--BEGIN') === 0) {
+            $id = ltrim($result, '--BEGIN');
+            $id = str_replace('--END', '', $id);
+            $id = str_replace('ID:', '', $id);
+            $id = str_replace(' ', '', $id);
+
+            return $id;
+        } else {
+            $this->generateExceptionFromResultString($result);
+        }
     }
 
     /**
@@ -139,6 +166,50 @@ class AdpApiClient implements iAdpGuzzleApiClient
         $result_rec = file_get_contents($this->base_uri . $url);
 
         return $result_rec;
+    }
+
+    /**
+     * @param string $result
+     * @throws AdpAuthenticationException
+     * @throws AdpEnoughCreditException
+     * @throws AdpException
+     * @throws AdpInvalidMessageBodyException
+     * @throws AdpValidationException
+     */
+    protected function generateExceptionFromResultString(string $result)
+    {
+        //‫‪User‬‬ ‫‪Authentication‬‬ ‫‪Failure‬‬
+        if (strpos($result, 'User Authentication Failure')) {
+            throw new AdpAuthenticationException($result);
+        }
+
+        //‫‪Not‬‬ ‫‪Enough‬‬ ‫‪Credit‬‬
+        if (strpos($result, 'Not Enough Credit')) {
+            throw new AdpEnoughCreditException($result);
+        }
+
+        //‫‪Null‬‬ ‫‪Parameter‬‬
+        if (strpos($result, 'Null Parameter')) {
+            throw new AdpInvalidArgumentException($result);
+        }
+
+        //‫‪Body‬‬ ‫‪Decoding‬‬ ‫‪Error‬‬
+        if (strpos($result, 'Body Decoding Error')) {
+            throw new AdpInvalidMessageBodyException($result);
+        }
+
+        //‫‪Parameter‬‬ ‫‪value‬‬ ‫‪is‬‬ ‫‪not‬‬ ‫‪valid‬‬
+        if (strpos($result, 'Parameter Value is not Valid')) {
+            throw new AdpValidationException($result);
+        }
+
+        //‫‪Parameter‬‬ ‫‪value‬‬ ‫‪is‬‬ ‫‪not‬‬ ‫‪valid‬‬
+        if (strpos($result, 'Parameter Value is not Valid')) {
+            throw new AdpValidationException($result);
+        }
+
+        throw new AdpException($result);
+
     }
 
 }
