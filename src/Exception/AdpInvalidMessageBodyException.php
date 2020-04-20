@@ -7,6 +7,6 @@ use Exception;
  * Class AdpInvalidMessageBodyException
  * @package mghddev\adp\Exception
  */
-class AdpInvalidMessageBodyException extends Exception
+class AdpInvalidMessageBodyException extends AdpException
 {
 }

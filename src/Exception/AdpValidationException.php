@@ -7,7 +7,7 @@ use Exception;
  * Class AdpValidationException
  * @package mghddev\adp\Exception
  */
-class AdpValidationException extends Exception
+class AdpValidationException extends AdpException
 {
 
 }
