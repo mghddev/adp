@@ -14,4 +14,6 @@ interface iAdpGuzzleApiClient
 
     public function report(ReportVO $reportVO);
 
+    public function bulkReport(ReportVO $reportVO);
+
 }

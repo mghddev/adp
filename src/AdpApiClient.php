@@ -186,6 +186,52 @@ class AdpApiClient implements iAdpGuzzleApiClient
     }
 
     /**
+     * @param ReportVO $reportVO
+     * @return array
+     * @throws AdpAuthenticationException
+     * @throws AdpEnoughCreditException
+     * @throws AdpException
+     * @throws AdpInvalidMessageBodyException
+     * @throws AdpMessageNotFoundException
+     * @throws AdpValidationException
+     */
+    public function bulkReport(ReportVO $reportVO)
+    {
+        $url = '/report?username=' .
+            $this->username . '&password=' .
+            $this->password;
+
+        if (!empty($reportVO->getFromClientId())) {
+            $url = $url . '&fromclientid=' . $reportVO->getFromClientId();
+        }
+
+        if (!empty($reportVO->getFromId())) {
+            $url = $url . '&fromid=' . $reportVO->getFromId();
+        }
+
+        if (!empty($reportVO->getFull())) {
+            $url = $url . '&full=' . $reportVO->getFull();
+        }
+
+        if (!empty($reportVO->getSrcAddress())) {
+            $url = $url . '&srcaddress=' . $reportVO->getSrcAddress();
+        }
+
+        $result_rep = file_get_contents($this->base_uri . $url);
+
+        if (strpos($result_rep, '--BEGIN') === 0) {
+            $id = ltrim($result_rep, '--BEGIN');
+            if (strpos($id, 'INFO') === 1) {
+                throw new AdpMessageNotFoundException($result_rep);
+            } else {
+                return $this->generateBulkStatus(ltrim($id));
+            }
+        }
+
+        $this->generateExceptionFromResultString($result_rep);
+    }
+
+    /**
      * @param string $result
      * @throws AdpAuthenticationException
      * @throws AdpEnoughCreditException
@@ -248,4 +294,33 @@ class AdpApiClient implements iAdpGuzzleApiClient
         }
     }
 
+    private function generateBulkStatus(string $result)
+    {
+        $statuses = [];
+
+        while (strpos($result, 'ID:') === 0) {
+            $start = strpos($result, 'ID');
+            $space = strpos($result, ' ');
+            $str = substr($result, $start, $space - $start);
+            $id = str_replace('ID:', '', $str);
+            $result = ltrim(str_replace($str . ' ', '', $result));
+
+            $start2 = strpos($result, 'CLIENTID');
+            $space2 = strpos($result, ' ');
+            $str2 = substr($result, $start2, $space2 - $start2);
+            $result = ltrim(str_replace($str2 . ' ', '', $result));
+
+            $start3 = strpos($result, 'STATUS');
+            $space3 = strpos($result, ' ');
+
+            $str3 = substr($result, $start3, $space3 - $start3);
+            $status = str_replace('STATUS:', '', $str3);
+            $result = ltrim(substr($result, $space3, strlen($result) - $space3));
+
+            $statuses[$id] = $this->generateStatus($status);
+        }
+
+        return $statuses;
+
+    }
 }
